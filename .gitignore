@@ -1,16 +1,25 @@
-# System files
+# System / OS
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# IDE files
+# Dependencies
+node_modules/
+.npm/
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
 .vscode/
 .idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.swp
 
-# Local logs
-*.log
+# Env files
+.env
+.env.local
+.env.*.local
