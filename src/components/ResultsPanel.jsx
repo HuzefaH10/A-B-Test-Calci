@@ -115,25 +115,41 @@ function MetricCard({ label, valueNode, sub, topColor, isLift, liftPositive, del
   );
 }
 
-// ─── Conversion Rate Bar Chart ──────────────────────────────────────────────────
 function ConversionChart({ results, variants }) {
   const { rates, comparisons } = results;
-  const sigIndexes = new Set(
-    comparisons.filter(c => c.isSignificant && c.uplift > 0).map(c => c.variantIndex)
-  );
+
+  let winnerIndex = -1;
+  const sigComps = comparisons.filter(c => c.isSignificant);
+  if (sigComps.length > 0) {
+    const bestComp = sigComps.reduce((a, b) => a.uplift > b.uplift ? a : b);
+    if (bestComp.uplift > 0) {
+      winnerIndex = bestComp.variantIndex;
+    } else {
+      winnerIndex = 0;
+    }
+  }
 
   const data = variants.map((_, i) => ({
     name: i === 0 ? 'Control (A)' : `Variation ${VARIANT_LABELS[i]}`,
     rate: rates[i] * 100,
-    color: sigIndexes.has(i) ? '#22c55e' : VARIANT_COLORS[i],
+    color: i === 0 ? '#8b5cf6' : (i === 1 ? '#06b6d4' : VARIANT_COLORS[i]),
+    isWinner: i === winnerIndex,
   }));
 
   const CustomLabel = (props) => {
-    const { x, y, width, value } = props;
+    const { x, y, width, value, index } = props;
+    const isWinner = data[index].isWinner;
     return (
-      <text x={x + width + 6} y={y + 12} fill="#94a3b8" fontSize={12} fontFamily="Inter" fontWeight={600}>
-        {value.toFixed(2)}%
-      </text>
+      <g>
+        <text x={x + width + 6} y={y + 12} fill="#94a3b8" fontSize={12} fontFamily="Inter" fontWeight={600}>
+          {value.toFixed(2)}%
+        </text>
+        {isWinner && (
+          <text x={x + width + 55} y={y + 12} fill="#22c55e" fontSize={11} fontFamily="Inter" fontWeight={700}>
+            Winner ✓
+          </text>
+        )}
+      </g>
     );
   };
 
@@ -400,11 +416,38 @@ export default function ResultsPanel({ results, variants, config, testName, hypo
     }
   };
 
+  const handleExportCSV = () => {
+    const rows = [['Variant', 'Visitors', 'Conversions', 'Conversion Rate', 'Uplift vs Control', 'P-Value', 'Z-Score', 'Significant']];
+    variants.forEach((v, i) => {
+      const rate = results.rates[i] * 100;
+      let uplift = '—', pVal = '—', zScore = '—', sig = '—';
+      if (i > 0) {
+        const comp = comparisons[i - 1];
+        uplift = `${comp.uplift.toFixed(2)}%`;
+        pVal = comp.pValue.toFixed(4);
+        zScore = comp.z.toFixed(3);
+        sig = comp.isSignificant ? 'Yes' : 'No';
+      }
+      rows.push([`Variant ${VARIANT_LABELS[i]}`, v.visitors, v.conversions, `${rate.toFixed(2)}%`, uplift, pVal, zScore, sig]);
+    });
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(e => e.join(',')).join('\n');
+    const link = document.createElement('a');
+    link.setAttribute('href', encodeURI(csvContent));
+    const safeName = testName ? `${testName.replace(/[^a-z0-9]/gi, '_')}` : 'results';
+    link.setAttribute('download', `ab_test_${safeName}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
   return (
     <div className={styles.panel} ref={panelRef}>
       <div className={styles.exportActions}>
         <button className={styles.btnExport} onClick={handleExportPDF} disabled={isExporting}>
           {isExporting ? '⏳ Exporting...' : '↓ Export PDF'}
+        </button>
+        <button className={styles.btnExport} onClick={handleExportCSV}>
+          ↓ Export CSV
         </button>
       </div>
 

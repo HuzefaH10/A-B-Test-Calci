@@ -111,15 +111,16 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  padding: 8px 14px;
-  background: rgba(99,102,241,0.07);
+  padding: 10px 16px;
+  background: rgba(99,102,241,0.08);
   border: 1px solid rgba(99,102,241,0.2);
+  border-left: 3px solid #6366f1;
   border-radius: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
-.bannerLabel { color: #6366f1; font-weight: 600; }
-.bannerName { color: #94a3b8; font-weight: 500; }
+.bannerLabel { color: #64748b; font-weight: 500; }
+.bannerName { color: #ffffff; font-weight: 700; }
 
 /* ─── FAB (Floating Action Button) ─────────────────────────────────────────── */
 .fab {
@@ -155,9 +156,11 @@
 
 .fabLabel {
   position: absolute;
-  right: 68px;
+  bottom: calc(100% + 12px);
+  right: 50%;
+  transform: translateX(50%);
   background: #1e293b;
-  color: #e2e8f0;
+  color: #ffffff;
   font-size: 12px;
   font-weight: 600;
   padding: 6px 12px;
@@ -165,8 +168,19 @@
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s;
+  transition: opacity 0.15s ease-in-out;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.fabLabel::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: #1e293b transparent transparent transparent;
 }
 
 .fab:hover .fabLabel {
