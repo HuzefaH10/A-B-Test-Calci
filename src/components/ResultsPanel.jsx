@@ -1,74 +1,89 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartTooltip,
   ResponsiveContainer, Cell, LabelList, ReferenceLine
 } from 'recharts';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+import CountUp from './CountUp';
 import styles from './ResultsPanel.module.css';
 
 const VARIANT_LABELS = ['A', 'B', 'C', 'D'];
-const VARIANT_COLORS = ['#94a3b8', '#6366f1', '#22c55e', '#f59e0b'];
+// Control = purple, Variation = teal, extras = green/amber
+const VARIANT_COLORS = ['#a78bfa', '#2dd4bf', '#22c55e', '#f59e0b'];
 
 function fmt(n, decimals = 2) {
-  return typeof n === 'number' && isFinite(n)
-    ? n.toFixed(decimals)
-    : '—';
+  return typeof n === 'number' && isFinite(n) ? n.toFixed(decimals) : '—';
 }
 
-function fmtPct(n) {
-  return typeof n === 'number' && isFinite(n)
-    ? `${(n * 100).toFixed(2)}%`
-    : '—';
-}
-
-// ─── Verdict Card ──────────────────────────────────────────────────────────────
+// ─── Verdict Card ───────────────────────────────────────────────────────────────
 function VerdictCard({ results, variants, confidenceLevel }) {
-  const { comparisons, effectiveConfidence } = results;
+  const { comparisons } = results;
   const significantComps = comparisons.filter(c => c.isSignificant);
-  const hasMulitple = comparisons.length > 1;
+  const hasMultiple = comparisons.length > 1;
 
-  // Determine overall verdict
-  let verdict, vClass, vIcon;
+  let verdict, vClass, vIcon, vHeadline;
+
   if (significantComps.length > 0) {
     const best = significantComps.reduce((a, b) => a.uplift > b.uplift ? a : b);
     const label = VARIANT_LABELS[best.variantIndex];
+    vHeadline = `Variation ${label} Wins!`;
     verdict = {
       badge: 'STATISTICALLY SIGNIFICANT',
       badgeClass: styles.badgeSuccess,
-      headline: `Variant ${label} wins with ${(best.achievedConfidence * 100).toFixed(1)}% confidence`,
-      sub: `p = ${best.pValue.toFixed(4)} · Uplift: ${best.uplift >= 0 ? '+' : ''}${best.uplift.toFixed(2)}%`,
+      headline: vHeadline,
+      sub: `p = ${best.pValue.toFixed(4)} · Uplift: ${best.uplift >= 0 ? '+' : ''}${best.uplift.toFixed(2)}% · ${(best.achievedConfidence * 100).toFixed(1)}% confidence`,
     };
     vClass = styles.verdictSuccess;
-    vIcon = '✓';
+    vIcon = (
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    );
   } else {
     const maxConf = Math.max(...comparisons.map(c => c.achievedConfidence));
     if (maxConf > 0.7) {
+      vHeadline = 'No Clear Winner Yet';
       verdict = {
         badge: 'INCONCLUSIVE',
         badgeClass: styles.badgeWarning,
-        headline: 'No clear winner detected yet',
-        sub: `Highest confidence achieved: ${(maxConf * 100).toFixed(1)}% (target: ${(confidenceLevel * 100).toFixed(0)}%)`,
+        headline: vHeadline,
+        sub: `Highest confidence achieved: ${(maxConf * 100).toFixed(1)}% (target: ${(confidenceLevel * 100).toFixed(0)}%) — keep collecting data.`,
       };
       vClass = styles.verdictWarning;
-      vIcon = '~';
+      vIcon = (
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      );
     } else {
+      vHeadline = 'More Data Needed';
       verdict = {
         badge: 'NOT SIGNIFICANT',
         badgeClass: styles.badgeDanger,
-        headline: 'No clear winner detected',
-        sub: `Highest confidence achieved: ${(maxConf * 100).toFixed(1)}% (target: ${(confidenceLevel * 100).toFixed(0)}%)`,
+        headline: vHeadline,
+        sub: `Highest confidence achieved: ${(maxConf * 100).toFixed(1)}% (target: ${(confidenceLevel * 100).toFixed(0)}%) — continue running the test.`,
       };
       vClass = styles.verdictDanger;
-      vIcon = '✗';
+      vIcon = (
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      );
     }
   }
 
-  if (hasMulitple) {
+  if (hasMultiple) {
     verdict.sub += ' · Bonferroni correction applied';
   }
 
   return (
-    <div className={`${styles.verdictCard} ${vClass}`}>
-      <div className={styles.verdictIcon}>{vIcon}</div>
+    <div className={`${styles.verdictCard} ${vClass} ${styles.fadeIn}`}>
+      <div className={styles.verdictIconWrap}>{vIcon}</div>
       <div className={styles.verdictBody}>
         <span className={`${styles.verdictBadge} ${verdict.badgeClass}`}>
           {verdict.badge}
@@ -80,18 +95,27 @@ function VerdictCard({ results, variants, confidenceLevel }) {
   );
 }
 
-// ─── Key Metrics Row ───────────────────────────────────────────────────────────
-function MetricCard({ label, value, sub, highlight }) {
+// ─── Key Metrics Row ────────────────────────────────────────────────────────────
+function MetricCard({ label, valueNode, sub, topColor, isLift, liftPositive, delayIndex = 0 }) {
   return (
-    <div className={`${styles.metricCard} ${highlight ? styles.metricHighlight : ''}`}>
-      <div className={styles.metricValue}>{value}</div>
+    <div
+      className={`${styles.metricCard} ${styles.fadeIn}`}
+      style={{ animationDelay: `${delayIndex * 100}ms`, '--top-color': topColor }}
+    >
+      <div className={styles.metricCardTopBar} />
+      <div className={`${styles.metricValue} ${isLift ? (liftPositive ? styles.metricValueGreen : styles.metricValueRed) : ''}`}>
+        {isLift && (
+          <span className={styles.liftArrow}>{liftPositive ? '↑' : '↓'}</span>
+        )}
+        {valueNode}
+      </div>
       <div className={styles.metricLabel}>{label}</div>
       {sub && <div className={styles.metricSub}>{sub}</div>}
     </div>
   );
 }
 
-// ─── Conversion Rate Bar Chart ─────────────────────────────────────────────────
+// ─── Conversion Rate Bar Chart ──────────────────────────────────────────────────
 function ConversionChart({ results, variants }) {
   const { rates, comparisons } = results;
   const sigIndexes = new Set(
@@ -99,7 +123,7 @@ function ConversionChart({ results, variants }) {
   );
 
   const data = variants.map((_, i) => ({
-    name: `Variant ${VARIANT_LABELS[i]}`,
+    name: i === 0 ? 'Control (A)' : `Variation ${VARIANT_LABELS[i]}`,
     rate: rates[i] * 100,
     color: sigIndexes.has(i) ? '#22c55e' : VARIANT_COLORS[i],
   }));
@@ -107,56 +131,27 @@ function ConversionChart({ results, variants }) {
   const CustomLabel = (props) => {
     const { x, y, width, value } = props;
     return (
-      <text
-        x={x + width + 6}
-        y={y + 12}
-        fill="#94a3b8"
-        fontSize={12}
-        fontFamily="Inter"
-        fontWeight={600}
-      >
+      <text x={x + width + 6} y={y + 12} fill="#94a3b8" fontSize={12} fontFamily="Inter" fontWeight={600}>
         {value.toFixed(2)}%
       </text>
     );
   };
 
   return (
-    <div className={styles.chartCard}>
+    <div className={`${styles.chartCard} ${styles.fadeIn}`} style={{ animationDelay: '400ms' }}>
       <h3 className={styles.sectionTitle}>Conversion Rate Comparison</h3>
       <ResponsiveContainer width="100%" height={Math.max(120, data.length * 56)}>
         <BarChart data={data} layout="vertical" margin={{ left: 8, right: 64, top: 4, bottom: 4 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
-          <XAxis
-            type="number"
-            domain={[0, 'auto']}
-            tick={{ fill: '#475569', fontSize: 11 }}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(v) => `${v.toFixed(1)}%`}
-          />
-          <YAxis
-            type="category"
-            dataKey="name"
-            tick={{ fill: '#94a3b8', fontSize: 13, fontWeight: 600 }}
-            tickLine={false}
-            axisLine={false}
-            width={78}
-          />
+          <XAxis type="number" domain={[0, 'auto']} tick={{ fill: '#475569', fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v.toFixed(1)}%`} />
+          <YAxis type="category" dataKey="name" tick={{ fill: '#94a3b8', fontSize: 13, fontWeight: 600 }} tickLine={false} axisLine={false} width={100} />
           <RechartTooltip
             cursor={{ fill: 'rgba(255,255,255,0.03)' }}
-            contentStyle={{
-              background: '#252836',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 8,
-              color: '#f1f5f9',
-              fontSize: 13,
-            }}
+            contentStyle={{ background: '#252836', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#f1f5f9', fontSize: 13 }}
             formatter={(val) => [`${val.toFixed(3)}%`, 'Conv. Rate']}
           />
-          <Bar dataKey="rate" radius={[0, 4, 4, 0]} maxBarSize={28}>
-            {data.map((entry, index) => (
-              <Cell key={index} fill={entry.color} />
-            ))}
+          <Bar dataKey="rate" radius={[0, 4, 4, 0]} maxBarSize={28} isAnimationActive={true} animationDuration={1000}>
+            {data.map((entry, index) => <Cell key={index} fill={entry.color} />)}
             <LabelList dataKey="rate" content={<CustomLabel />} />
           </Bar>
         </BarChart>
@@ -165,34 +160,83 @@ function ConversionChart({ results, variants }) {
   );
 }
 
-// ─── Confidence Interval Chart ─────────────────────────────────────────────────
+// ─── Improved CI Chart with overlap detection ───────────────────────────────────
 function CIChart({ results, variants }) {
   const { rates, CIs } = results;
 
+  // Global range for scaling
+  const allLows = CIs.map(ci => ci.lower * 100);
+  const allHighs = CIs.map(ci => ci.upper * 100);
+  const padding = (Math.max(...allHighs) - Math.min(...allLows)) * 0.15 || 0.5;
+  const globalMin = Math.min(...allLows) - padding;
+  const globalMax = Math.max(...allHighs) + padding;
+  const range = globalMax - globalMin || 1;
+  const toPercent = (val) => ((val - globalMin) / range) * 100;
+
+  // Detect overlap between control (0) and first variant (1)
+  const ctrlLo = CIs[0].lower * 100;
+  const ctrlHi = CIs[0].upper * 100;
+  const varLo = CIs[1]?.lower * 100;
+  const varHi = CIs[1]?.upper * 100;
+  const hasOverlap = variants.length >= 2 && varLo !== undefined && ctrlHi > varLo && varHi > ctrlLo;
+  const overlapLo = hasOverlap ? Math.max(ctrlLo, varLo) : null;
+  const overlapHi = hasOverlap ? Math.min(ctrlHi, varHi) : null;
+
   return (
-    <div className={styles.chartCard}>
+    <div className={`${styles.chartCard} ${styles.fadeIn}`} style={{ animationDelay: '500ms' }}>
       <div className={styles.ciHeader}>
         <h3 className={styles.sectionTitle}>Confidence Intervals</h3>
-        <span className={styles.ciHint}>Non-overlapping intervals → stronger evidence</span>
+        <span className={`${styles.ciSignalBadge} ${hasOverlap ? styles.ciSignalWeak : styles.ciSignalStrong}`}>
+          {hasOverlap ? '⚠ Overlap — uncertainty area' : '✓ No overlap — strong signal'}
+        </span>
       </div>
+
       <div className={styles.ciRows}>
         {variants.map((_, i) => {
-          const lo = (CIs[i].lower * 100);
-          const hi = (CIs[i].upper * 100);
-          const mid = (rates[i] * 100);
+          const lo = CIs[i].lower * 100;
+          const hi = CIs[i].upper * 100;
+          const mid = rates[i] * 100;
           const color = VARIANT_COLORS[i];
+          const label = i === 0 ? 'Control (A)' : `Variation ${VARIANT_LABELS[i]}`;
 
           return (
             <div key={i} className={styles.ciRow}>
               <span className={styles.ciLabel}>
                 <span className={styles.ciDot} style={{ background: color }} />
-                Variant {VARIANT_LABELS[i]}
+                {label}
               </span>
               <div className={styles.ciTrack}>
-                <CIBar lo={lo} hi={hi} mid={mid} color={color} variants={variants} rates={rates} CIs={CIs} />
+                <div className={styles.ciBarTrack}>
+                  {/* Range bar */}
+                  <div
+                    className={styles.ciBarFill}
+                    style={{
+                      left: `${toPercent(lo)}%`,
+                      width: `${toPercent(hi) - toPercent(lo)}%`,
+                      background: `${color}25`,
+                      borderColor: color,
+                    }}
+                  />
+                  {/* Overlap zone */}
+                  {hasOverlap && overlapLo !== null && overlapHi !== null && (
+                    <div
+                      className={styles.ciOverlapZone}
+                      style={{
+                        left: `${toPercent(overlapLo)}%`,
+                        width: `${toPercent(overlapHi) - toPercent(overlapLo)}%`,
+                      }}
+                    />
+                  )}
+                  {/* Center dot */}
+                  <div
+                    className={styles.ciMidPoint}
+                    style={{ left: `${toPercent(mid)}%`, background: color }}
+                  />
+                </div>
               </div>
               <span className={styles.ciRange}>
-                [{lo.toFixed(2)}%, {hi.toFixed(2)}%]
+                {mid.toFixed(2)}%
+                <span className={styles.ciRangeSub}> ({lo.toFixed(2)}% – {hi.toFixed(2)}%)</span>
               </span>
             </div>
           );
@@ -202,57 +246,23 @@ function CIChart({ results, variants }) {
   );
 }
 
-function CIBar({ lo, hi, mid, color, variants, rates, CIs }) {
-  // Find global range for scaling
-  const allLows = CIs.map(ci => ci.lower * 100);
-  const allHighs = CIs.map(ci => ci.upper * 100);
-  const globalMin = Math.min(...allLows) * 0.85;
-  const globalMax = Math.max(...allHighs) * 1.15;
-  const range = globalMax - globalMin || 1;
-
-  const toPercent = (val) => ((val - globalMin) / range) * 100;
-
-  return (
-    <div className={styles.ciBarTrack}>
-      <div
-        className={styles.ciBarFill}
-        style={{
-          left: `${toPercent(lo)}%`,
-          width: `${toPercent(hi) - toPercent(lo)}%`,
-          background: `${color}30`,
-          borderColor: color,
-        }}
-      />
-      <div
-        className={styles.ciMidPoint}
-        style={{
-          left: `${toPercent(mid)}%`,
-          background: color,
-        }}
-      />
-    </div>
-  );
-}
-
-// ─── Sample Size Progress ──────────────────────────────────────────────────────
+// ─── Sample Size Progress ───────────────────────────────────────────────────────
 function SampleSizeCard({ results, variants, mde }) {
-  const { nRequiredMDE, comparisons } = results;
+  const { nRequiredMDE } = results;
   const minVisitors = Math.min(...variants.map(v => v.visitors));
   const pct = nRequiredMDE > 0 && isFinite(nRequiredMDE)
     ? Math.min(100, (minVisitors / nRequiredMDE) * 100)
     : 100;
   const sufficient = pct >= 100;
 
+  const progressClass = pct >= 80 ? styles.progressOk : pct >= 50 ? styles.progressAmber : styles.progressWarn;
+
   return (
-    <div className={styles.sampleCard}>
+    <div className={`${styles.sampleCard} ${styles.fadeIn}`} style={{ animationDelay: '600ms' }}>
       <div className={styles.sampleHeader}>
         <h3 className={styles.sectionTitle}>Sample Size Analysis</h3>
-        {!sufficient && (
-          <span className={styles.warnBadge}>⚠ Insufficient Sample</span>
-        )}
-        {sufficient && (
-          <span className={styles.okBadge}>✓ Adequate Sample</span>
-        )}
+        {!sufficient && <span className={styles.warnBadge}>⚠ Insufficient Sample</span>}
+        {sufficient && <span className={styles.okBadge}>✓ Adequate Sample</span>}
       </div>
       <p className={styles.sampleDesc}>
         To detect a <strong>{(mde * 100).toFixed(0)}%</strong> relative effect, you need at least{' '}
@@ -261,12 +271,12 @@ function SampleSizeCard({ results, variants, mde }) {
         </strong>{' '}
         visitors per variant.
       </p>
+      <div className={styles.sampleAdequacy}>
+        <span className={styles.sampleAdequacyLabel}>Sample size adequacy: <strong>{pct.toFixed(0)}%</strong></span>
+      </div>
       <div className={styles.progressRow}>
         <div className={styles.progressBar}>
-          <div
-            className={`${styles.progressFill} ${sufficient ? styles.progressOk : styles.progressWarn}`}
-            style={{ width: `${pct}%` }}
-          />
+          <div className={`${styles.progressFill} ${progressClass}`} style={{ width: `${pct}%` }} />
         </div>
         <span className={styles.progressLabel}>{pct.toFixed(0)}%</span>
       </div>
@@ -280,7 +290,7 @@ function SampleSizeCard({ results, variants, mde }) {
   );
 }
 
-// ─── Interpretation Guide ──────────────────────────────────────────────────────
+// ─── Interpretation Guide ───────────────────────────────────────────────────────
 function InterpretationCard({ results, variants, confidenceLevel, twoTailed }) {
   const [open, setOpen] = useState(false);
   const { comparisons } = results;
@@ -291,7 +301,6 @@ function InterpretationCard({ results, variants, confidenceLevel, twoTailed }) {
     const z = c.z;
     const pThreshold = 1 - confidenceLevel;
     const sig = c.isSignificant;
-
     return (
       <p key={idx} className={styles.interpPara}>
         <strong>Variant {vLabel} vs Control:</strong> Your Z-score is{' '}
@@ -309,13 +318,8 @@ function InterpretationCard({ results, variants, confidenceLevel, twoTailed }) {
   });
 
   return (
-    <div className={styles.interpCard}>
-      <button
-        type="button"
-        className={styles.interpToggle}
-        onClick={() => setOpen(o => !o)}
-        aria-expanded={open}
-      >
+    <div className={`${styles.interpCard} ${styles.fadeIn}`} style={{ animationDelay: '700ms' }}>
+      <button type="button" className={styles.interpToggle} onClick={() => setOpen(o => !o)} aria-expanded={open}>
         <span>📖 Interpretation Guide</span>
         <span className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`}>▾</span>
       </button>
@@ -334,8 +338,11 @@ function InterpretationCard({ results, variants, confidenceLevel, twoTailed }) {
   );
 }
 
-// ─── Main ResultsPanel ─────────────────────────────────────────────────────────
-export default function ResultsPanel({ results, variants, config }) {
+// ─── Main ResultsPanel ──────────────────────────────────────────────────────────
+export default function ResultsPanel({ results, variants, config, testName, hypothesis }) {
+  const panelRef = useRef(null);
+  const [isExporting, setIsExporting] = useState(false);
+
   if (!results) {
     return (
       <div className={styles.emptyState}>
@@ -353,36 +360,99 @@ export default function ResultsPanel({ results, variants, config }) {
   }
 
   const { comparisons } = results;
-
-  // Key metrics for the primary (first) comparison
   const primary = comparisons[0];
+  const liftPositive = primary.uplift >= 0;
+
+  const handleExportPDF = async () => {
+    if (!panelRef.current) return;
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(panelRef.current, {
+        scale: 2,
+        backgroundColor: '#0f1117',
+        ignoreElements: (element) => element.classList.contains(styles.exportActions),
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const date = new Date().toISOString().split('T')[0];
+      const name = testName ? `${testName.replace(/[^a-z0-9]/gi, '_')}_` : 'AB_Test_';
+      pdf.save(`${name}Results_${date}.pdf`);
+    } catch (e) {
+      console.error('Failed to export PDF', e);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    const rows = [['Variant', 'Visitors', 'Conversions', 'Conversion Rate', 'Uplift vs Control', 'P-Value', 'Significant']];
+    variants.forEach((v, i) => {
+      const rate = results.rates[i] * 100;
+      let uplift = '—', pVal = '—', sig = '—';
+      if (i > 0) {
+        const comp = comparisons[i - 1];
+        uplift = `${comp.uplift.toFixed(2)}%`;
+        pVal = comp.pValue.toFixed(4);
+        sig = comp.isSignificant ? 'Yes' : 'No';
+      }
+      rows.push([`Variant ${VARIANT_LABELS[i]}`, v.visitors, v.conversions, `${rate.toFixed(2)}%`, uplift, pVal, sig]);
+    });
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(e => e.join(',')).join('\n');
+    const link = document.createElement('a');
+    link.setAttribute('href', encodeURI(csvContent));
+    link.setAttribute('download', `ab_test_results_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
 
   return (
-    <div className={styles.panel}>
+    <div className={styles.panel} ref={panelRef}>
+      <div className={styles.exportActions}>
+        <button className={styles.btnExport} onClick={handleExportPDF} disabled={isExporting}>
+          {isExporting ? '⏳ Exporting...' : '↓ Export PDF'}
+        </button>
+        <button className={styles.btnExport} onClick={handleExportCSV}>
+          ↓ Export CSV
+        </button>
+      </div>
+
       <VerdictCard results={results} variants={variants} confidenceLevel={config.confidenceLevel} />
 
       {/* Key Metrics Row */}
       <div className={styles.metricsRow}>
         <MetricCard
           label="Relative Uplift"
-          value={`${primary.uplift >= 0 ? '+' : ''}${primary.uplift.toFixed(2)}%`}
-          sub="Variant B vs Control"
-          highlight={primary.isSignificant && primary.uplift > 0}
+          valueNode={<CountUp value={primary.uplift} decimals={2} prefix={liftPositive ? '+' : ''} suffix="%" />}
+          sub="Variation vs Control"
+          topColor={liftPositive ? '#22c55e' : '#ef4444'}
+          isLift={true}
+          liftPositive={liftPositive}
+          delayIndex={1}
         />
         <MetricCard
           label="P-Value"
-          value={primary.pValue.toFixed(4)}
+          valueNode={<CountUp value={primary.pValue} decimals={4} />}
           sub={primary.pValue < (1 - config.confidenceLevel) ? 'Significant ✓' : 'Not significant'}
+          topColor="#a78bfa"
+          delayIndex={2}
         />
         <MetricCard
           label="Z-Score"
-          value={primary.z.toFixed(3)}
+          valueNode={<CountUp value={primary.z} decimals={3} />}
           sub={`|z| > ${results.zAlpha.toFixed(2)} = significant`}
+          topColor="#2dd4bf"
+          delayIndex={3}
         />
         <MetricCard
           label="Required / Variant"
-          value={isFinite(primary.nRequired) ? primary.nRequired.toLocaleString() : '∞'}
+          valueNode={isFinite(primary.nRequired) ? <CountUp value={primary.nRequired} /> : '∞'}
           sub={`for ${(config.mde * 100).toFixed(0)}% MDE`}
+          topColor="#64748b"
+          delayIndex={4}
         />
       </div>
 

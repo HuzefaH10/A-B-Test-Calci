@@ -39,16 +39,10 @@
 }
 
 .logoTitle {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 800;
   color: #f1f5f9;
   letter-spacing: -0.02em;
-}
-
-.logoSub {
-  font-size: 11px;
-  color: #475569;
-  font-weight: 500;
 }
 
 .githubLink {
@@ -70,6 +64,27 @@
   color: #f1f5f9;
   background: rgba(255,255,255,0.06);
   border-color: rgba(255,255,255,0.14);
+}
+
+/* Outlined GitHub button */
+.githubBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: transparent;
+  transition: all 0.2s;
+}
+.githubBtn:hover {
+  color: #f1f5f9;
+  border-color: rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.04);
 }
 
 /* ─── Main Layout ──────────────────────────────────────────────────────────── */
@@ -276,6 +291,27 @@
 
 .btnPrimary:active { transform: translateY(0); }
 
+.btnPrimary:disabled {
+  background: rgba(99,102,241,0.5);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .btnGhost {
   background: transparent;
   border: 1px solid rgba(255,255,255,0.1);
@@ -345,17 +381,178 @@
 
 /* ─── Footer ───────────────────────────────────────────────────────────────── */
 .footer {
-  border-top: 1px solid rgba(255,255,255,0.05);
-  padding: 20px 24px;
-  text-align: center;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 16px 24px;
   font-size: 12px;
   color: #334155;
 }
 
-.footer a {
-  color: #475569;
-  text-decoration: none;
-  transition: color 0.2s;
+.footerInner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.footer a:hover { color: #6366f1; }
+/* ─── Header Additions ────────────────────────────────────────────────────── */
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.builtBy {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 500;
+  display: none;
+}
+@media (min-width: 600px) {
+  .builtBy { display: inline-block; }
+}
+
+.socialLink {
+  color: #64748b;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+}
+.socialLink:hover { color: #f1f5f9; }
+
+/* ─── History Panel ───────────────────────────────────────────────────────── */
+.historyPanel {
+  background: #1a1d27;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.historyHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  padding-bottom: 8px;
+}
+
+.historyTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.clearHistoryBtn {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.clearHistoryBtn:hover { opacity: 0.8; }
+
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.historyCard {
+  background: #0f1117;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.historyCard:hover {
+  border-color: rgba(99,102,241,0.3);
+}
+
+.historyCardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.historyCardName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
+}
+
+.historyCardDate {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.historyCardBottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.historyBadge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+/* History empty state */
+.historyEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px;
+  border: 1.5px dashed rgba(255,255,255,0.1);
+  border-radius: 10px;
+  text-align: center;
+  gap: 4px;
+}
+
+.historyEmptyIcon {
+  font-size: 22px;
+  opacity: 0.5;
+  margin-bottom: 4px;
+}
+
+.historyEmptyText {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.historyEmptySub {
+  font-size: 11px;
+  color: #334155;
+}
+
+.historyUplift {
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+/* Badge colours used in history cards */
+.badgeSuccess { background: rgba(34,197,94,0.12); color: #22c55e; }
+.badgeWarning { background: rgba(245,158,11,0.12); color: #f59e0b; }
+.badgeDanger  { background: rgba(239,68,68,0.12); color: #ef4444; }

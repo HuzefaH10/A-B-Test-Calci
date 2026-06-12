@@ -13,11 +13,7 @@
   border-radius: 14px;
 }
 
-.emptyIcon {
-  font-size: 48px;
-  margin-bottom: 20px;
-  opacity: 0.5;
-}
+.emptyIcon { font-size: 48px; margin-bottom: 20px; opacity: 0.5; }
 
 .emptyTitle {
   font-size: 22px;
@@ -54,40 +50,58 @@
 .verdictCard {
   border-radius: 14px;
   border: 1px solid;
-  padding: 24px;
+  border-left-width: 4px;
+  padding: 24px 28px;
   display: flex;
   align-items: flex-start;
   gap: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shimmer animation overlay */
+.verdictCard::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  60%, 100% { left: 100%; }
 }
 
 .verdictSuccess {
-  background: rgba(34,197,94,0.06);
-  border-color: rgba(34,197,94,0.25);
+  background: rgba(34,197,94,0.07);
+  border-color: rgba(34,197,94,0.2);
+  border-left-color: #22c55e;
 }
 .verdictWarning {
-  background: rgba(245,158,11,0.06);
-  border-color: rgba(245,158,11,0.25);
+  background: rgba(245,158,11,0.07);
+  border-color: rgba(245,158,11,0.2);
+  border-left-color: #f59e0b;
 }
 .verdictDanger {
-  background: rgba(239,68,68,0.06);
-  border-color: rgba(239,68,68,0.2);
+  background: rgba(100,116,139,0.07);
+  border-color: rgba(100,116,139,0.2);
+  border-left-color: #64748b;
 }
 
-.verdictIcon {
-  width: 40px;
-  height: 40px;
+.verdictIconWrap {
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  font-weight: 900;
   flex-shrink: 0;
 }
 
-.verdictSuccess .verdictIcon { background: rgba(34,197,94,0.15); color: #22c55e; }
-.verdictWarning .verdictIcon { background: rgba(245,158,11,0.15); color: #f59e0b; }
-.verdictDanger  .verdictIcon { background: rgba(239,68,68,0.15);  color: #ef4444; }
+.verdictSuccess .verdictIconWrap { background: rgba(34,197,94,0.15); color: #22c55e; }
+.verdictWarning .verdictIconWrap { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.verdictDanger  .verdictIconWrap { background: rgba(100,116,139,0.15); color: #94a3b8; }
 
 .verdictBody { flex: 1; }
 
@@ -95,27 +109,29 @@
   display: inline-block;
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  padding: 3px 8px;
+  letter-spacing: 0.1em;
+  padding: 3px 9px;
   border-radius: 4px;
   margin-bottom: 8px;
 }
 
 .badgeSuccess { background: rgba(34,197,94,0.15); color: #22c55e; }
 .badgeWarning { background: rgba(245,158,11,0.15); color: #f59e0b; }
-.badgeDanger  { background: rgba(239,68,68,0.15);  color: #ef4444; }
+.badgeDanger  { background: rgba(100,116,139,0.15); color: #94a3b8; }
 
 .verdictHeadline {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 800;
   color: #f1f5f9;
-  margin-bottom: 4px;
-  line-height: 1.3;
+  margin-bottom: 6px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .verdictSub {
   font-size: 13px;
   color: #64748b;
+  line-height: 1.5;
 }
 
 /* ─── Metric Cards ─────────────────────────────────────────────────────────── */
@@ -137,18 +153,25 @@
   background: #1a1d27;
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 10px;
-  padding: 16px 14px;
+  padding: 0 0 14px 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  transition: border-color 0.2s;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  cursor: default;
 }
 
-.metricCard:hover { border-color: rgba(255,255,255,0.13); }
+.metricCard:hover {
+  transform: scale(1.02);
+  border-color: rgba(255,255,255,0.15);
+}
 
-.metricHighlight {
-  border-color: rgba(34,197,94,0.25);
-  background: rgba(34,197,94,0.04);
+.metricCardTopBar {
+  height: 3px;
+  background: var(--top-color, #6366f1);
+  border-radius: 10px 10px 0 0;
+  margin-bottom: 12px;
 }
 
 .metricValue {
@@ -157,9 +180,16 @@
   color: #f1f5f9;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
+  padding: 0 14px;
 }
 
-.metricHighlight .metricValue { color: #22c55e; }
+.metricValueGreen { color: #22c55e; }
+.metricValueRed { color: #ef4444; }
+
+.liftArrow {
+  font-size: 18px;
+  margin-right: 2px;
+}
 
 .metricLabel {
   font-size: 11px;
@@ -167,12 +197,14 @@
   color: #475569;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  padding: 0 14px;
 }
 
 .metricSub {
   font-size: 11px;
   color: #334155;
   margin-top: 2px;
+  padding: 0 14px;
 }
 
 /* ─── Chart Cards ──────────────────────────────────────────────────────────── */
@@ -199,28 +231,41 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .ciHeader .sectionTitle { margin-bottom: 0; }
 
-.ciHint {
+.ciSignalBadge {
   font-size: 11px;
-  color: #475569;
-  font-style: italic;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
 }
 
-.ciRows { display: flex; flex-direction: column; gap: 14px; }
+.ciSignalWeak {
+  background: rgba(245,158,11,0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245,158,11,0.3);
+}
+
+.ciSignalStrong {
+  background: rgba(34,197,94,0.12);
+  color: #22c55e;
+  border: 1px solid rgba(34,197,94,0.3);
+}
+
+.ciRows { display: flex; flex-direction: column; gap: 20px; }
 
 .ciRow {
   display: grid;
-  grid-template-columns: 90px 1fr 160px;
+  grid-template-columns: 110px 1fr auto;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 @media (max-width: 560px) {
-  .ciRow { grid-template-columns: 60px 1fr; }
+  .ciRow { grid-template-columns: 80px 1fr; }
   .ciRange { display: none; }
 }
 
@@ -244,34 +289,54 @@
 
 .ciBarTrack {
   position: relative;
-  height: 20px;
+  height: 24px;
   background: rgba(255,255,255,0.03);
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 .ciBarFill {
   position: absolute;
   top: 4px;
-  height: 12px;
+  height: 16px;
   border-radius: 6px;
   border: 1.5px solid;
+  transition: width 0.4s ease;
+}
+
+.ciOverlapZone {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(245,158,11,0.15);
+  border: 1px dashed rgba(245,158,11,0.5);
+  border-radius: 4px;
+  pointer-events: none;
 }
 
 .ciMidPoint {
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
+  border: 2px solid #0f1117;
+  z-index: 1;
 }
 
 .ciRange {
-  font-size: 11px;
-  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
+}
+
+.ciRangeSub {
+  font-size: 10px;
+  font-weight: 400;
+  color: #475569;
 }
 
 /* ─── Sample Size Card ─────────────────────────────────────────────────────── */
@@ -292,33 +357,35 @@
 .sampleHeader .sectionTitle { margin-bottom: 0; }
 
 .warnBadge {
-  font-size: 11px;
-  font-weight: 700;
-  background: rgba(245,158,11,0.12);
-  color: #f59e0b;
+  font-size: 11px; font-weight: 700;
+  background: rgba(245,158,11,0.12); color: #f59e0b;
   border: 1px solid rgba(245,158,11,0.3);
-  border-radius: 20px;
-  padding: 3px 10px;
+  border-radius: 20px; padding: 3px 10px;
 }
 
 .okBadge {
-  font-size: 11px;
-  font-weight: 700;
-  background: rgba(34,197,94,0.12);
-  color: #22c55e;
+  font-size: 11px; font-weight: 700;
+  background: rgba(34,197,94,0.12); color: #22c55e;
   border: 1px solid rgba(34,197,94,0.3);
-  border-radius: 20px;
-  padding: 3px 10px;
+  border-radius: 20px; padding: 3px 10px;
 }
 
 .sampleDesc {
-  font-size: 14px;
-  color: #94a3b8;
-  margin-bottom: 14px;
-  line-height: 1.6;
+  font-size: 14px; color: #94a3b8;
+  margin-bottom: 14px; line-height: 1.6;
 }
 
 .highlight { color: #818cf8; }
+
+.sampleAdequacy {
+  margin-bottom: 6px;
+}
+
+.sampleAdequacyLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
 
 .progressRow {
   display: flex;
@@ -328,59 +395,39 @@
 }
 
 .progressBar {
-  flex: 1;
-  height: 8px;
+  flex: 1; height: 8px;
   background: rgba(255,255,255,0.05);
-  border-radius: 4px;
-  overflow: hidden;
+  border-radius: 4px; overflow: hidden;
 }
 
 .progressFill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+  height: 100%; border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
 }
 
 .progressOk { background: linear-gradient(90deg, #22c55e, #16a34a); }
-.progressWarn { background: linear-gradient(90deg, #f59e0b, #d97706); }
+.progressAmber { background: linear-gradient(90deg, #f59e0b, #d97706); }
+.progressWarn { background: linear-gradient(90deg, #ef4444, #dc2626); }
 
-.progressLabel {
-  font-size: 13px;
-  font-weight: 700;
-  color: #94a3b8;
-  min-width: 36px;
-  text-align: right;
-}
+.progressLabel { font-size: 13px; font-weight: 700; color: #94a3b8; min-width: 36px; text-align: right; }
 
-.sampleSub {
-  font-size: 13px;
-  color: #475569;
-  line-height: 1.5;
-}
+.sampleSub { font-size: 13px; color: #475569; line-height: 1.5; }
 
 /* ─── Interpretation Card ──────────────────────────────────────────────────── */
 .interpCard {
   background: #1a1d27;
   border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 14px;
-  overflow: hidden;
+  border-radius: 14px; overflow: hidden;
 }
 
 .interpToggle {
-  width: 100%;
-  background: none;
-  border: none;
+  width: 100%; background: none; border: none;
   padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  color: #94a3b8;
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; color: #94a3b8;
   font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 13px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
   transition: background 0.2s;
 }
 
@@ -392,28 +439,51 @@
 .interpBody {
   padding: 4px 20px 20px;
   border-top: 1px solid rgba(255,255,255,0.06);
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  display: flex; flex-direction: column; gap: 14px;
 }
 
-.interpPara {
-  font-size: 13px;
-  color: #64748b;
-  line-height: 1.7;
-}
-
+.interpPara { font-size: 13px; color: #64748b; line-height: 1.7; }
 .interpPara em { color: #818cf8; font-style: normal; font-weight: 600; }
 .interpPara strong { color: #94a3b8; font-weight: 600; }
 
 .interpNote {
-  font-size: 12px;
-  color: #475569;
+  font-size: 12px; color: #475569;
   background: rgba(255,255,255,0.02);
-  border-radius: 8px;
-  padding: 12px 14px;
+  border-radius: 8px; padding: 12px 14px;
   border-left: 3px solid rgba(245,158,11,0.4);
   line-height: 1.6;
 }
-
 .interpNote strong { color: #64748b; }
+
+/* ─── Export Actions ───────────────────────────────────────────────────────── */
+.exportActions {
+  display: flex; justify-content: flex-end; gap: 10px;
+}
+
+.btnExport {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px; color: #64748b;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px; font-weight: 600;
+  padding: 8px 14px; cursor: pointer;
+  transition: all 0.2s; min-height: 36px;
+}
+
+.btnExport:hover:not(:disabled) {
+  color: #f1f5f9;
+  border-color: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+}
+
+.btnExport:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Animations ───────────────────────────────────────────────────────────── */
+.fadeIn {
+  opacity: 0;
+  animation: fadeInAnim 0.5s ease forwards;
+}
+
+@keyframes fadeInAnim {
+  to { opacity: 1; }
+}
