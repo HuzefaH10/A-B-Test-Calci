@@ -20,7 +20,7 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 24px;
-  height: 64px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -29,11 +29,11 @@
 .logo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .logoIcon {
-  font-size: 28px;
+  font-size: 24px;
   color: #6366f1;
   line-height: 1;
 }
@@ -45,28 +45,30 @@
   letter-spacing: -0.02em;
 }
 
-.githubLink {
+.headerRight {
   display: flex;
   align-items: center;
-  gap: 7px;
-  color: #64748b;
-  text-decoration: none;
+  gap: 14px;
+}
+
+.builtBy {
   font-size: 13px;
-  font-weight: 600;
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.07);
-  background: rgba(255,255,255,0.02);
-  transition: all 0.2s;
+  color: #94a3b8;
+  font-weight: 500;
+  display: none;
+}
+@media (min-width: 600px) {
+  .builtBy { display: inline-block; }
 }
 
-.githubLink:hover {
-  color: #f1f5f9;
-  background: rgba(255,255,255,0.06);
-  border-color: rgba(255,255,255,0.14);
+.socialLink {
+  color: #64748b;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
 }
+.socialLink:hover { color: #f1f5f9; }
 
-/* Outlined GitHub button */
 .githubBtn {
   display: flex;
   align-items: center;
@@ -87,48 +89,208 @@
   background: rgba(255,255,255,0.04);
 }
 
-/* ─── Main Layout ──────────────────────────────────────────────────────────── */
+/* ─── Main (Full Width Results) ────────────────────────────────────────────── */
 .main {
   flex: 1;
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 32px 24px 48px;
   width: 100%;
-  display: grid;
-  grid-template-columns: 420px 1fr;
-  gap: 24px;
-  align-items: start;
 }
 
-@media (max-width: 960px) {
-  .main {
-    grid-template-columns: 1fr;
-    padding: 20px 16px 40px;
-  }
+@media (max-width: 768px) {
+  .main { padding: 20px 16px 40px; }
 }
 
-/* ─── Input Column ─────────────────────────────────────────────────────────── */
-.inputsColumn {
-  position: sticky;
-  top: 80px;
+.resultsArea {
+  width: 100%;
+}
+
+.testNameBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 8px 14px;
+  background: rgba(99,102,241,0.07);
+  border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.bannerLabel { color: #6366f1; font-weight: 600; }
+.bannerName { color: #94a3b8; font-weight: 500; }
+
+/* ─── FAB (Floating Action Button) ─────────────────────────────────────────── */
+.fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 200;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: #6366f1;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 24px rgba(99,102,241,0.45), 0 2px 8px rgba(0,0,0,0.3);
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+.fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 32px rgba(99,102,241,0.55), 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.fab:active { transform: scale(0.96); }
+
+.fabActive {
+  background: #ef4444;
+  box-shadow: 0 6px 24px rgba(239,68,68,0.35);
+}
+
+.fabLabel {
+  position: absolute;
+  right: 68px;
+  background: #1e293b;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.fab:hover .fabLabel {
+  opacity: 1;
+}
+
+/* ─── Overlay ──────────────────────────────────────────────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 300;
+  animation: fadeInOverlay 0.2s ease;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ─── Drawer ───────────────────────────────────────────────────────────────── */
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  z-index: 400;
+  background: #1a1d27;
+  border-left: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: -8px 0 40px rgba(0,0,0,0.5);
+}
+
+.drawerOpen {
+  transform: translateX(0);
+}
+
+@media (max-width: 768px) {
+  .drawer { width: 100vw; }
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+
+.drawerTitle {
+  font-size: 17px;
+  font-weight: 800;
+  color: #f1f5f9;
+  margin: 0 0 2px;
+}
+
+.drawerSubtitle {
+  font-size: 12px;
+  color: #475569;
+  margin: 0;
+}
+
+.drawerClose {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: transparent;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.drawerClose:hover {
+  color: #f1f5f9;
+  background: rgba(255,255,255,0.05);
+}
+
+.drawerContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-@media (max-width: 960px) {
-  .inputsColumn { position: static; }
+.drawerContent::-webkit-scrollbar { width: 5px; }
+.drawerContent::-webkit-scrollbar-track { background: transparent; }
+.drawerContent::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+
+.drawerFooter {
+  flex-shrink: 0;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #1a1d27;
+}
+
+.drawerFooterRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
 /* ─── Sections ─────────────────────────────────────────────────────────────── */
 .section {
-  background: #1a1d27;
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 14px;
-  padding: 20px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .sectionTitle {
@@ -137,7 +299,7 @@
   color: #475569;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding-bottom: 10px;
+  padding-bottom: 8px;
   border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
@@ -145,7 +307,7 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
 }
 
 .fieldLabel {
@@ -164,7 +326,6 @@
   transition: color 0.2s;
   line-height: 1;
 }
-
 .infoIcon:hover { color: #818cf8; }
 
 .textInput {
@@ -191,7 +352,7 @@
 
 .textarea {
   resize: vertical;
-  min-height: 60px;
+  min-height: 56px;
   line-height: 1.5;
 }
 
@@ -200,10 +361,7 @@
   display: flex;
   align-items: center;
 }
-
-.inputWithSuffix .textInput {
-  padding-right: 36px;
-}
+.inputWithSuffix .textInput { padding-right: 36px; }
 
 .suffix {
   position: absolute;
@@ -234,7 +392,6 @@
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .addVariantBtn:hover {
   background: rgba(99,102,241,0.07);
   border-color: rgba(99,102,241,0.5);
@@ -258,18 +415,12 @@
   color: #f87171;
   font-size: 13px;
   font-weight: 500;
-  padding: 12px 14px;
+  padding: 10px 12px;
 }
 
 /* ─── Action Buttons ───────────────────────────────────────────────────────── */
-.actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
 .btnPrimary {
-  grid-column: 1 / -1;
+  width: 100%;
   background: #6366f1;
   border: none;
   border-radius: 10px;
@@ -288,9 +439,7 @@
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(99,102,241,0.4);
 }
-
 .btnPrimary:active { transform: translateY(0); }
-
 .btnPrimary:disabled {
   background: rgba(99,102,241,0.5);
   cursor: not-allowed;
@@ -307,10 +456,7 @@
   border-top-color: white;
   animation: spin 0.8s linear infinite;
 }
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .btnGhost {
   background: transparent;
@@ -318,13 +464,12 @@
   border-radius: 10px;
   color: #64748b;
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  padding: 11px 20px;
+  padding: 10px 16px;
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .btnGhost:hover {
   color: #94a3b8;
   border-color: rgba(255,255,255,0.18);
@@ -337,46 +482,15 @@
   border-radius: 10px;
   color: #818cf8;
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  padding: 11px 20px;
+  padding: 10px 16px;
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .btnSample:hover {
   background: rgba(99,102,241,0.16);
   border-color: rgba(99,102,241,0.4);
-}
-
-/* ─── Results Column ───────────────────────────────────────────────────────── */
-.resultsColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  min-height: 500px;
-}
-
-.testNameBanner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  padding: 8px 14px;
-  background: rgba(99,102,241,0.07);
-  border: 1px solid rgba(99,102,241,0.2);
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
-
-.bannerLabel {
-  color: #6366f1;
-  font-weight: 600;
-}
-
-.bannerName {
-  color: #94a3b8;
-  font-weight: 500;
 }
 
 /* ─── Footer ───────────────────────────────────────────────────────────────── */
@@ -397,42 +511,15 @@
   flex-wrap: wrap;
 }
 
-/* ─── Header Additions ────────────────────────────────────────────────────── */
-.headerRight {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.builtBy {
-  font-size: 13px;
-  color: #94a3b8;
-  font-weight: 500;
-  display: none;
-}
-@media (min-width: 600px) {
-  .builtBy { display: inline-block; }
-}
-
-.socialLink {
-  color: #64748b;
-  transition: color 0.2s;
-  display: flex;
-  align-items: center;
-}
-.socialLink:hover { color: #f1f5f9; }
-
-/* ─── History Panel ───────────────────────────────────────────────────────── */
+/* ─── History Panel (inside drawer) ────────────────────────────────────────── */
 .historyPanel {
-  background: #1a1d27;
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 14px;
-  padding: 16px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  max-height: 400px;
-  overflow-y: auto;
+  gap: 10px;
 }
 
 .historyHeader {
@@ -444,7 +531,7 @@
 }
 
 .historyTitle {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #94a3b8;
   text-transform: uppercase;
@@ -456,7 +543,7 @@
   background: transparent;
   border: none;
   color: #ef4444;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.2s;
@@ -466,7 +553,7 @@
 .historyList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .historyCard {
@@ -485,11 +572,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .historyCardName {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: #f1f5f9;
   white-space: nowrap;
@@ -499,7 +586,7 @@
 }
 
 .historyCardDate {
-  font-size: 11px;
+  font-size: 10px;
   color: #64748b;
 }
 
@@ -517,42 +604,28 @@
   text-transform: uppercase;
 }
 
-/* History empty state */
-.historyEmpty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px 16px;
-  border: 1.5px dashed rgba(255,255,255,0.1);
-  border-radius: 10px;
-  text-align: center;
-  gap: 4px;
-}
-
-.historyEmptyIcon {
-  font-size: 22px;
-  opacity: 0.5;
-  margin-bottom: 4px;
-}
-
-.historyEmptyText {
-  font-size: 13px;
-  font-weight: 600;
-  color: #475569;
-}
-
-.historyEmptySub {
-  font-size: 11px;
-  color: #334155;
-}
-
 .historyUplift {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #94a3b8;
 }
 
-/* Badge colours used in history cards */
+.historyEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 12px;
+  border: 1.5px dashed rgba(255,255,255,0.08);
+  border-radius: 8px;
+  text-align: center;
+  gap: 3px;
+}
+
+.historyEmptyIcon { font-size: 18px; opacity: 0.4; }
+.historyEmptyText { font-size: 12px; font-weight: 600; color: #475569; margin: 0; }
+.historyEmptySub { font-size: 10px; color: #334155; margin: 0; }
+
+/* Badge colours */
 .badgeSuccess { background: rgba(34,197,94,0.12); color: #22c55e; }
 .badgeWarning { background: rgba(245,158,11,0.12); color: #f59e0b; }
 .badgeDanger  { background: rgba(239,68,68,0.12); color: #ef4444; }

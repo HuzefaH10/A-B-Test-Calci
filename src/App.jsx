@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import SegmentedControl from './components/SegmentedControl';
 import Tooltip from './components/Tooltip';
 import VariantInput from './components/VariantInput';
@@ -84,17 +84,25 @@ export default function App() {
   const [error, setError] = useState('');
   const [isCalculating, setIsCalculating] = useState(false);
   const [history, setHistory] = useState([]);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [hasCalculated, setHasCalculated] = useState(() => {
+    try { return localStorage.getItem('ab_has_calculated') === 'true'; } catch { return false; }
+  });
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem('ab_test_history');
-      if (saved) {
-        setHistory(JSON.parse(saved));
-      }
+      if (saved) setHistory(JSON.parse(saved));
     } catch (e) {
       console.error('Error loading history', e);
     }
   }, []);
+
+  // Lock body scroll when drawer is open
+  useEffect(() => {
+    document.body.style.overflow = drawerOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [drawerOpen]);
 
   const saveToHistory = (testForm, testResults) => {
     const primary = testResults.comparisons[0];
@@ -144,10 +152,7 @@ export default function App() {
   };
 
   const loadSample = () => {
-    setForm({
-      ...SAMPLE_DATA,
-      mde: SAMPLE_DATA.mde * 100,
-    });
+    setForm({ ...SAMPLE_DATA, mde: SAMPLE_DATA.mde * 100 });
     setResults(null);
     setError('');
   };
@@ -163,7 +168,6 @@ export default function App() {
     const rows = [
       ['Variant', 'Visitors', 'Conversions', 'Conversion Rate', 'Uplift vs Control', 'P-Value', 'Z-Score', 'Significant (Yes/No)']
     ];
-    
     form.variants.forEach((v, i) => {
       const rate = results.rates[i] * 100;
       let uplift = '—', pVal = '—', zScore = '—', sig = '—';
@@ -176,24 +180,20 @@ export default function App() {
       }
       rows.push([`Variant ${VARIANT_LABELS[i]}`, v.visitors, v.conversions, `${rate.toFixed(2)}%`, uplift, pVal, zScore, sig]);
     });
-    
     const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(e => e.join(',')).join('\n');
-    const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    const date = new Date().toISOString().split('T')[0];
-    link.setAttribute('download', `ab_test_results_${date}.csv`);
+    link.setAttribute('href', encodeURI(csvContent));
+    link.setAttribute('download', `ab_test_results_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     link.remove();
   };
 
-  const calculate = () => {
+  const calculate = useCallback(() => {
     setError('');
     const { variants, confidenceLevel, power, mde, twoTailed } = form;
     const mdeDecimal = mde / 100;
 
-    // Validation
     for (let i = 0; i < variants.length; i++) {
       const v = variants[i];
       if (!v.visitors || v.visitors <= 0) {
@@ -220,13 +220,18 @@ export default function App() {
         });
         setResults(res);
         saveToHistory(form, res);
+        setDrawerOpen(false); // Auto-close drawer on successful calculation
+        if (!hasCalculated) {
+          setHasCalculated(true);
+          localStorage.setItem('ab_has_calculated', 'true');
+        }
       } catch (e) {
         setError('Calculation error: ' + e.message);
       } finally {
         setIsCalculating(false);
       }
     }, 800);
-  };
+  }, [form, hasCalculated, history]);
 
   const config = {
     confidenceLevel: form.confidenceLevel,
@@ -242,9 +247,7 @@ export default function App() {
         <div className={styles.headerInner}>
           <div className={styles.logo}>
             <span className={styles.logoIcon}>📊</span>
-            <div>
-              <div className={styles.logoTitle}>A/B Test Calci</div>
-            </div>
+            <div className={styles.logoTitle}>A/B Test Calci</div>
           </div>
           <div className={styles.headerRight}>
             <span className={styles.builtBy}>Built by Huzefa Haveliwala</span>
@@ -275,12 +278,82 @@ export default function App() {
         </div>
       </header>
 
-      {/* ── Main layout ── */}
+      {/* ── Full-width Results ── */}
       <main className={styles.main}>
-        {/* LEFT — Inputs */}
-        <div className={styles.inputsColumn}>
+        <div className={styles.resultsArea}>
+          {form.testName && results && (
+            <div className={styles.testNameBanner}>
+              <span className={styles.bannerLabel}>Analyzing:</span>
+              <span className={styles.bannerName}>{form.testName}</span>
+            </div>
+          )}
+          <ResultsPanel
+            results={results}
+            variants={form.variants}
+            config={config}
+            testName={form.testName}
+            hypothesis={form.hypothesis}
+            onOpenDrawer={() => setDrawerOpen(true)}
+            showOnboarding={!hasCalculated && !results}
+          />
+        </div>
+      </main>
 
-          {/* Section 1: Test Configuration */}
+      {/* ── Footer ── */}
+      <footer className={styles.footer}>
+        <div className={styles.footerInner}>
+          <span>A/B Test Calculator — Statistical significance made simple</span>
+          <span>© 2026 Huzefa Haveliwala</span>
+        </div>
+      </footer>
+
+      {/* ── FAB (Floating Action Button) ── */}
+      <button
+        className={`${styles.fab} ${drawerOpen ? styles.fabActive : ''}`}
+        onClick={() => setDrawerOpen(o => !o)}
+        title={drawerOpen ? 'Close' : 'Edit Test Inputs'}
+        aria-label={drawerOpen ? 'Close inputs drawer' : 'Open inputs drawer'}
+      >
+        {drawerOpen ? (
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        ) : (
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <line x1="4" y1="6" x2="20" y2="6"/>
+            <circle cx="8" cy="6" r="2" fill="currentColor"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <circle cx="16" cy="12" r="2" fill="currentColor"/>
+            <line x1="4" y1="18" x2="20" y2="18"/>
+            <circle cx="11" cy="18" r="2" fill="currentColor"/>
+          </svg>
+        )}
+        <span className={styles.fabLabel}>{drawerOpen ? '' : 'Edit Test Inputs'}</span>
+      </button>
+
+      {/* ── Overlay ── */}
+      {drawerOpen && (
+        <div className={styles.overlay} onClick={() => setDrawerOpen(false)} />
+      )}
+
+      {/* ── Input Drawer ── */}
+      <aside className={`${styles.drawer} ${drawerOpen ? styles.drawerOpen : ''}`}>
+        <div className={styles.drawerHeader}>
+          <div>
+            <h2 className={styles.drawerTitle}>Test Configuration</h2>
+            <p className={styles.drawerSubtitle}>Set up your A/B test parameters</p>
+          </div>
+          <button className={styles.drawerClose} onClick={() => setDrawerOpen(false)} aria-label="Close drawer">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div className={styles.drawerContent}>
+          {/* Test Config */}
           <Section title="Test Configuration">
             <Field label="Test Name (optional)">
               <input
@@ -316,7 +389,7 @@ export default function App() {
             </Field>
           </Section>
 
-          {/* Section 2: Stats settings */}
+          {/* Stats */}
           <Section title="Significance & Power">
             <Field label="Confidence Level">
               <SegmentedControl
@@ -354,7 +427,7 @@ export default function App() {
             </Field>
           </Section>
 
-          {/* Sections 3-6: Variants */}
+          {/* Variants */}
           <Section title="Variants">
             <div className={styles.variantList}>
               {form.variants.map((v, i) => (
@@ -387,56 +460,6 @@ export default function App() {
             )}
           </Section>
 
-          {/* Error message */}
-          {error && (
-            <div className={styles.errorMsg} role="alert">
-              ⚠ {error}
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className={styles.actions}>
-            <button
-              type="button"
-              id="calculate-btn"
-              className={styles.btnPrimary}
-              onClick={calculate}
-              disabled={isCalculating}
-            >
-              {isCalculating ? (
-                <span className={styles.spinner}></span>
-              ) : 'Calculate Results'}
-            </button>
-            <button
-              type="button"
-              id="reset-btn"
-              className={styles.btnGhost}
-              onClick={reset}
-              disabled={isCalculating}
-            >
-              Reset
-            </button>
-            {results && (
-              <button
-                type="button"
-                className={styles.btnGhost}
-                onClick={handleExportCSV}
-                disabled={isCalculating}
-              >
-                Export CSV
-              </button>
-            )}
-            <button
-              type="button"
-              id="sample-data-btn"
-              className={styles.btnSample}
-              onClick={loadSample}
-              disabled={isCalculating}
-            >
-              Load Sample Data
-            </button>
-          </div>
-
           {/* History Panel */}
           <div className={styles.historyPanel}>
             <div className={styles.historyHeader}>
@@ -445,7 +468,7 @@ export default function App() {
                 Recent Tests
               </h3>
               {history.length > 0 && (
-                <button type="button" className={styles.clearHistoryBtn} onClick={clearHistory}>Clear History</button>
+                <button type="button" className={styles.clearHistoryBtn} onClick={clearHistory}>Clear</button>
               )}
             </div>
             {history.length === 0 ? (
@@ -457,7 +480,7 @@ export default function App() {
             ) : (
               <div className={styles.historyList}>
                 {history.map((item) => (
-                  <div key={item.id} className={styles.historyCard} onClick={() => loadHistoryItem(item)}>
+                  <div key={item.id} className={styles.historyCard} onClick={() => { loadHistoryItem(item); }}>
                     <div className={styles.historyCardTop}>
                       <span className={styles.historyCardName}>{item.testName}</span>
                       <span className={styles.historyCardDate}>{item.date}</span>
@@ -477,30 +500,39 @@ export default function App() {
           </div>
         </div>
 
-        {/* RIGHT — Results */}
-        <div className={styles.resultsColumn}>
-          {form.testName && results && (
-            <div className={styles.testNameBanner}>
-              <span className={styles.bannerLabel}>Analyzing:</span>
-              <span className={styles.bannerName}>{form.testName}</span>
+        {/* Drawer Footer — sticky actions */}
+        <div className={styles.drawerFooter}>
+          {error && (
+            <div className={styles.errorMsg} role="alert">
+              ⚠ {error}
             </div>
           )}
-          <ResultsPanel
-            results={results}
-            variants={form.variants}
-            config={config}
-            testName={form.testName}
-            hypothesis={form.hypothesis}
-          />
+          <button
+            type="button"
+            id="calculate-btn"
+            className={styles.btnPrimary}
+            onClick={calculate}
+            disabled={isCalculating}
+          >
+            {isCalculating ? (
+              <span className={styles.spinner}></span>
+            ) : 'Calculate Results'}
+          </button>
+          <div className={styles.drawerFooterRow}>
+            <button type="button" className={styles.btnGhost} onClick={reset} disabled={isCalculating}>
+              Reset
+            </button>
+            <button type="button" className={styles.btnSample} onClick={loadSample} disabled={isCalculating}>
+              Load Sample Data
+            </button>
+          </div>
+          {results && (
+            <button type="button" className={styles.btnGhost} onClick={handleExportCSV} disabled={isCalculating} style={{width:'100%'}}>
+              ↓ Export CSV
+            </button>
+          )}
         </div>
-      </main>
-
-      <footer className={styles.footer}>
-        <div className={styles.footerInner}>
-          <span>A/B Test Calculator — Statistical significance made simple</span>
-          <span>© 2026 Huzefa Haveliwala</span>
-        </div>
-      </footer>
+      </aside>
     </div>
   );
 }

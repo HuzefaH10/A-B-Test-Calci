@@ -339,7 +339,7 @@ function InterpretationCard({ results, variants, confidenceLevel, twoTailed }) {
 }
 
 // ─── Main ResultsPanel ──────────────────────────────────────────────────────────
-export default function ResultsPanel({ results, variants, config, testName, hypothesis }) {
+export default function ResultsPanel({ results, variants, config, testName, hypothesis, onOpenDrawer, showOnboarding }) {
   const panelRef = useRef(null);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -347,14 +347,27 @@ export default function ResultsPanel({ results, variants, config, testName, hypo
     return (
       <div className={styles.emptyState}>
         <div className={styles.emptyIcon}>📊</div>
-        <h2 className={styles.emptyTitle}>Results will appear here</h2>
+        <h2 className={styles.emptyTitle}>A/B Test Results</h2>
         <p className={styles.emptyDesc}>
-          Fill in your test data on the left and click <strong>Calculate Results</strong> to
-          see a full statistical analysis.
+          Set up your test parameters and click <strong>Calculate Results</strong> to
+          see a full statistical analysis with charts, confidence intervals, and more.
         </p>
-        <p className={styles.emptyTip}>
-          💡 Try <strong>Load Sample Data</strong> to see an example instantly.
-        </p>
+        {showOnboarding && (
+          <div className={styles.onboardingHint}>
+            <span className={styles.onboardingText}>Click the button to set up your test</span>
+            <span className={styles.onboardingArrow}>↘</span>
+          </div>
+        )}
+        {onOpenDrawer && (
+          <button className={styles.emptyAction} onClick={onOpenDrawer}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="4" y1="6" x2="20" y2="6"/><circle cx="8" cy="6" r="2" fill="currentColor"/>
+              <line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2" fill="currentColor"/>
+              <line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2" fill="currentColor"/>
+            </svg>
+            Configure Test
+          </button>
+        )}
       </div>
     );
   }
