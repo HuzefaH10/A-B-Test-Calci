@@ -387,36 +387,11 @@ export default function ResultsPanel({ results, variants, config, testName, hypo
     }
   };
 
-  const handleExportCSV = () => {
-    const rows = [['Variant', 'Visitors', 'Conversions', 'Conversion Rate', 'Uplift vs Control', 'P-Value', 'Significant']];
-    variants.forEach((v, i) => {
-      const rate = results.rates[i] * 100;
-      let uplift = '—', pVal = '—', sig = '—';
-      if (i > 0) {
-        const comp = comparisons[i - 1];
-        uplift = `${comp.uplift.toFixed(2)}%`;
-        pVal = comp.pValue.toFixed(4);
-        sig = comp.isSignificant ? 'Yes' : 'No';
-      }
-      rows.push([`Variant ${VARIANT_LABELS[i]}`, v.visitors, v.conversions, `${rate.toFixed(2)}%`, uplift, pVal, sig]);
-    });
-    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(e => e.join(',')).join('\n');
-    const link = document.createElement('a');
-    link.setAttribute('href', encodeURI(csvContent));
-    link.setAttribute('download', `ab_test_results_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  };
-
   return (
     <div className={styles.panel} ref={panelRef}>
       <div className={styles.exportActions}>
         <button className={styles.btnExport} onClick={handleExportPDF} disabled={isExporting}>
           {isExporting ? '⏳ Exporting...' : '↓ Export PDF'}
-        </button>
-        <button className={styles.btnExport} onClick={handleExportCSV}>
-          ↓ Export CSV
         </button>
       </div>
 

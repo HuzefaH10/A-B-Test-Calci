@@ -1,16 +1,22 @@
-# React + Vite
+# A/B Test Calculator
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A statistical significance calculator for A/B tests — built for product managers and growth teams.
 
-Currently, two official plugins are available:
+## 🚀 Live Demo
+[https://a-b-test-calci.vercel.app](https://a-b-test-calci.vercel.app)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ✨ Features
+- **Significance testing**: Instantly calculate p-values, z-scores, and statistical significance.
+- **Confidence intervals**: Visualize uncertainty and detect overlapping intervals.
+- **Sample size planning**: Track if you have enough visitors for reliable results.
+- **Multi-variant support**: Compare up to 4 variants with Bonferroni correction.
+- **Export to CSV/PDF**: Easily save your results for offline analysis and reporting.
 
-## React Compiler
+## 🛠️ Tech Stack
+- HTML
+- CSS
+- JavaScript
+- React + Vite
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 👨‍💻 Built By
+**Huzefa Haveliwala** — [linkedin.com/in/huzefa-haveliwala](https://linkedin.com/in/huzefa-haveliwala)

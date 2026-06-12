@@ -158,6 +158,36 @@ export default function App() {
     setError('');
   };
 
+  const handleExportCSV = () => {
+    if (!results) return;
+    const rows = [
+      ['Variant', 'Visitors', 'Conversions', 'Conversion Rate', 'Uplift vs Control', 'P-Value', 'Z-Score', 'Significant (Yes/No)']
+    ];
+    
+    form.variants.forEach((v, i) => {
+      const rate = results.rates[i] * 100;
+      let uplift = '—', pVal = '—', zScore = '—', sig = '—';
+      if (i > 0) {
+        const comp = results.comparisons[i - 1];
+        uplift = `${comp.uplift.toFixed(2)}%`;
+        pVal = comp.pValue.toFixed(4);
+        zScore = comp.z.toFixed(3);
+        sig = comp.isSignificant ? 'Yes' : 'No';
+      }
+      rows.push([`Variant ${VARIANT_LABELS[i]}`, v.visitors, v.conversions, `${rate.toFixed(2)}%`, uplift, pVal, zScore, sig]);
+    });
+    
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(e => e.join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    const date = new Date().toISOString().split('T')[0];
+    link.setAttribute('download', `ab_test_results_${date}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
   const calculate = () => {
     setError('');
     const { variants, confidenceLevel, power, mde, twoTailed } = form;
@@ -386,6 +416,16 @@ export default function App() {
             >
               Reset
             </button>
+            {results && (
+              <button
+                type="button"
+                className={styles.btnGhost}
+                onClick={handleExportCSV}
+                disabled={isCalculating}
+              >
+                Export CSV
+              </button>
+            )}
             <button
               type="button"
               id="sample-data-btn"
